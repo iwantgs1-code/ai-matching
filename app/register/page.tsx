@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,13 +15,31 @@ const JOB_TYPES = ['경비', '청소', '조리', '돌봄', '기타']
 
 type Errors = { name?: string; region?: string; desiredJob?: string }
 
+// 앱 레이어에서 매칭 점수 계산 (RPC 폴백)
+async function computeMatchesFallback(seniorId: string) {
+  const [{ data: senior }, { data: jobs }] = await Promise.all([
+    supabase.from('seniors').select('*').eq('id', seniorId).single(),
+    supabase.from('jobs').select('*'),
+  ])
+  if (!senior || !jobs?.length) return
+
+  const rows = jobs.map(job => {
+    let score = 0
+    if (senior.region === job.region) score += 3
+    if (senior.desired_job === job.job_type) score += 2
+    if (senior.career_years >= job.required_career) score += 1
+    return { senior_id: seniorId, job_id: job.id, score, status: 'pending' }
+  })
+  await supabase.from('matches').upsert(rows, { onConflict: 'senior_id,job_id' })
+}
+
 export default function RegisterPage() {
+  const router = useRouter()
   const [name, setName] = useState('')
   const [region, setRegion] = useState('')
   const [desiredJob, setDesiredJob] = useState('')
   const [careerYears, setCareerYears] = useState('')
   const [errors, setErrors] = useState<Errors>({})
-  const [success, setSuccess] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   function validate(): Errors {
@@ -33,24 +52,27 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setSuccess(false)
-    const e2 = validate()
-    if (Object.keys(e2).length > 0) { setErrors(e2); return }
+    const errs = validate()
+    if (Object.keys(errs).length > 0) { setErrors(errs); return }
     setErrors({})
     setSubmitting(true)
     try {
-      const { error } = await supabase.from('seniors').insert({
-        name: name.trim(),
-        region,
-        desired_job: desiredJob,
-        career_years: parseInt(careerYears) || 0,
-      })
+      const { data, error } = await supabase
+        .from('seniors')
+        .insert({ name: name.trim(), region, desired_job: desiredJob, career_years: parseInt(careerYears) || 0 })
+        .select('id')
+        .single()
       if (error) throw error
-      setSuccess(true)
-      setName(''); setRegion(''); setDesiredJob(''); setCareerYears('')
+
+      const seniorId = data.id
+
+      // RPC 호출 → 실패 시 앱 레이어 폴백
+      const { error: rpcErr } = await supabase.rpc('match_senior', { p_senior_id: seniorId })
+      if (rpcErr) await computeMatchesFallback(seniorId)
+
+      router.push(`/recommendations?senior_id=${seniorId}`)
     } catch (err) {
       console.error(err)
-    } finally {
       setSubmitting(false)
     }
   }
@@ -62,14 +84,6 @@ export default function RegisterPage() {
         아래 정보를 입력하시면 맞춤 일자리를 추천해 드립니다
       </p>
 
-      {success && (
-        <Alert className="mb-6 border-2 border-green-500 bg-green-50">
-          <AlertDescription className="text-green-800 text-lg font-semibold">
-            등록이 완료되었습니다
-          </AlertDescription>
-        </Alert>
-      )}
-
       <Card className="border-2">
         <CardHeader>
           <CardTitle className="text-2xl">시니어 정보 입력</CardTitle>
@@ -77,7 +91,6 @@ export default function RegisterPage() {
         <CardContent>
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
 
-            {/* 이름 */}
             <div className="flex flex-col gap-2">
               <Label htmlFor="name" className="text-lg font-semibold">
                 이름 <span className="text-red-600">*</span>
@@ -87,16 +100,10 @@ export default function RegisterPage() {
                   <AlertDescription className="text-red-700 text-base">{errors.name}</AlertDescription>
                 </Alert>
               )}
-              <Input
-                id="name"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="홍길동"
-                className="text-lg py-6 border-2"
-              />
+              <Input id="name" value={name} onChange={e => setName(e.target.value)}
+                placeholder="홍길동" className="text-lg py-6 border-2" />
             </div>
 
-            {/* 지역 */}
             <div className="flex flex-col gap-2">
               <Label className="text-lg font-semibold">
                 지역 <span className="text-red-600">*</span>
@@ -111,14 +118,11 @@ export default function RegisterPage() {
                   <SelectValue placeholder="지역 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  {REGIONS.map(r => (
-                    <SelectItem key={r} value={r} className="text-lg">{r}</SelectItem>
-                  ))}
+                  {REGIONS.map(r => <SelectItem key={r} value={r} className="text-lg">{r}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* 희망 직종 */}
             <div className="flex flex-col gap-2">
               <Label className="text-lg font-semibold">
                 희망 직종 <span className="text-red-600">*</span>
@@ -133,34 +137,20 @@ export default function RegisterPage() {
                   <SelectValue placeholder="직종 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  {JOB_TYPES.map(j => (
-                    <SelectItem key={j} value={j} className="text-lg">{j}</SelectItem>
-                  ))}
+                  {JOB_TYPES.map(j => <SelectItem key={j} value={j} className="text-lg">{j}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* 경력 */}
             <div className="flex flex-col gap-2">
-              <Label htmlFor="career" className="text-lg font-semibold">
-                경력 (년)
-              </Label>
-              <Input
-                id="career"
-                type="number"
-                min="0"
-                value={careerYears}
+              <Label htmlFor="career" className="text-lg font-semibold">경력 (년)</Label>
+              <Input id="career" type="number" min="0" value={careerYears}
                 onChange={e => setCareerYears(e.target.value)}
-                placeholder="0"
-                className="text-lg py-6 border-2"
-              />
+                placeholder="0" className="text-lg py-6 border-2" />
             </div>
 
-            <Button
-              type="submit"
-              disabled={submitting}
-              className="bg-blue-700 hover:bg-blue-800 text-white text-xl font-bold py-6 mt-2"
-            >
+            <Button type="submit" disabled={submitting}
+              className="bg-blue-700 hover:bg-blue-800 text-white text-xl font-bold py-6 mt-2">
               {submitting ? '등록 중...' : '등록하기'}
             </Button>
           </form>
