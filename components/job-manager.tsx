@@ -120,7 +120,7 @@ export function JobManager() {
                     <AlertDescription className="text-red-700 text-base">{errors.region}</AlertDescription>
                   </Alert>
                 )}
-                <Select value={region} onValueChange={setRegion}>
+                <Select value={region} onValueChange={val => setRegion(val ?? '')}>
                   <SelectTrigger className="text-lg py-6 border-2">
                     <SelectValue placeholder="지역" />
                   </SelectTrigger>
@@ -142,7 +142,7 @@ export function JobManager() {
                     <AlertDescription className="text-red-700 text-base">{errors.jobType}</AlertDescription>
                   </Alert>
                 )}
-                <Select value={jobType} onValueChange={setJobType}>
+                <Select value={jobType} onValueChange={val => setJobType(val ?? '')}>
                   <SelectTrigger className="text-lg py-6 border-2">
                     <SelectValue placeholder="직종" />
                   </SelectTrigger>

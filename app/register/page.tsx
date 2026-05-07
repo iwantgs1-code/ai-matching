@@ -106,7 +106,7 @@ export default function RegisterPage() {
                   <AlertDescription className="text-red-700 text-base">{errors.region}</AlertDescription>
                 </Alert>
               )}
-              <Select value={region} onValueChange={setRegion}>
+              <Select value={region} onValueChange={val => setRegion(val ?? '')}>
                 <SelectTrigger className="text-lg py-6 border-2">
                   <SelectValue placeholder="지역 선택" />
                 </SelectTrigger>
@@ -128,7 +128,7 @@ export default function RegisterPage() {
                   <AlertDescription className="text-red-700 text-base">{errors.desiredJob}</AlertDescription>
                 </Alert>
               )}
-              <Select value={desiredJob} onValueChange={setDesiredJob}>
+              <Select value={desiredJob} onValueChange={val => setDesiredJob(val ?? '')}>
                 <SelectTrigger className="text-lg py-6 border-2">
                   <SelectValue placeholder="직종 선택" />
                 </SelectTrigger>
