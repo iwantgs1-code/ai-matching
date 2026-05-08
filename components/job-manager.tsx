@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { normalizeRegion, normalizeJobType } from '@/lib/normalize'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,8 +29,8 @@ async function computeMatchesFallback(jobId: string) {
 
   const rows = seniors.map(senior => {
     let score = 0
-    if (senior.region === job.region) score += 3
-    if (senior.desired_job === job.job_type) score += 2
+    if (normalizeRegion(senior.region) === normalizeRegion(job.region)) score += 3
+    if (normalizeJobType(senior.desired_job) === normalizeJobType(job.job_type)) score += 2
     if (senior.career_years >= job.required_career) score += 1
     return { senior_id: senior.id, job_id: jobId, score, status: 'pending' }
   })

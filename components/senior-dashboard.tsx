@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { AlertTriangle, Clock, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -88,7 +89,10 @@ export function SeniorDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <Card className="border-2 border-red-300 bg-red-50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-2xl text-red-700">미매칭</CardTitle>
+            <CardTitle className="text-2xl text-red-700 flex items-center gap-2">
+              <AlertTriangle className="w-7 h-7" />
+              미매칭
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-5xl font-bold text-red-700">{unmatched}<span className="text-2xl ml-1">명</span></p>
@@ -96,7 +100,10 @@ export function SeniorDashboard() {
         </Card>
         <Card className="border-2 border-yellow-300 bg-yellow-50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-2xl text-yellow-800">매칭 대기</CardTitle>
+            <CardTitle className="text-2xl text-yellow-800 flex items-center gap-2">
+              <Clock className="w-7 h-7" />
+              매칭 대기
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-5xl font-bold text-yellow-800">{pending}<span className="text-2xl ml-1">명</span></p>
@@ -104,7 +111,10 @@ export function SeniorDashboard() {
         </Card>
         <Card className="border-2 border-green-300 bg-green-50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-2xl text-green-800">배정 완료</CardTitle>
+            <CardTitle className="text-2xl text-green-800 flex items-center gap-2">
+              <CheckCircle2 className="w-7 h-7" />
+              배정 완료
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-5xl font-bold text-green-800">{assigned}<span className="text-2xl ml-1">명</span></p>

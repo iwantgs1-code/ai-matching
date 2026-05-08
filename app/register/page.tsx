@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { normalizeRegion, normalizeJobType } from '@/lib/normalize'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,8 +26,8 @@ async function computeMatchesFallback(seniorId: string) {
 
   const rows = jobs.map(job => {
     let score = 0
-    if (senior.region === job.region) score += 3
-    if (senior.desired_job === job.job_type) score += 2
+    if (normalizeRegion(senior.region) === normalizeRegion(job.region)) score += 3
+    if (normalizeJobType(senior.desired_job) === normalizeJobType(job.job_type)) score += 2
     if (senior.career_years >= job.required_career) score += 1
     return { senior_id: seniorId, job_id: job.id, score, status: 'pending' }
   })
@@ -70,7 +71,7 @@ export default function RegisterPage() {
       const { error: rpcErr } = await supabase.rpc('match_senior', { p_senior_id: seniorId })
       if (rpcErr) await computeMatchesFallback(seniorId)
 
-      router.push(`/recommendations?senior_id=${seniorId}`)
+      router.push(`/recommendations?senior_id=${seniorId}&registered=true`)
     } catch (err) {
       console.error(err)
       setSubmitting(false)
@@ -79,14 +80,14 @@ export default function RegisterPage() {
 
   return (
     <div className="max-w-xl mx-auto">
-      <h1 className="text-4xl font-bold text-gray-900 mb-2">프로필 등록</h1>
+      <h1 className="text-4xl font-bold text-gray-900 mb-2">시니어 일자리 신청하기</h1>
       <p className="text-xl text-gray-600 mb-8">
-        아래 정보를 입력하시면 맞춤 일자리를 추천해 드립니다
+        아래 내용을 채우시면 담당자가 맞는 일자리를 찾아드립니다
       </p>
 
       <Card className="border-2">
         <CardHeader>
-          <CardTitle className="text-2xl">시니어 정보 입력</CardTitle>
+          <CardTitle className="text-2xl">신청 정보 입력</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
@@ -95,6 +96,7 @@ export default function RegisterPage() {
               <Label htmlFor="name" className="text-lg font-semibold">
                 이름 <span className="text-red-600">*</span>
               </Label>
+              <p className="text-base text-gray-500">이름이 어떻게 되세요?</p>
               {errors.name && (
                 <Alert className="border-red-400 bg-red-50 py-2">
                   <AlertDescription className="text-red-700 text-base">{errors.name}</AlertDescription>
@@ -108,6 +110,7 @@ export default function RegisterPage() {
               <Label className="text-lg font-semibold">
                 지역 <span className="text-red-600">*</span>
               </Label>
+              <p className="text-base text-gray-500">어디에서 일하고 싶으세요?</p>
               {errors.region && (
                 <Alert className="border-red-400 bg-red-50 py-2">
                   <AlertDescription className="text-red-700 text-base">{errors.region}</AlertDescription>
@@ -127,6 +130,7 @@ export default function RegisterPage() {
               <Label className="text-lg font-semibold">
                 희망 직종 <span className="text-red-600">*</span>
               </Label>
+              <p className="text-base text-gray-500">어떤 일을 하시고 싶으세요?</p>
               {errors.desiredJob && (
                 <Alert className="border-red-400 bg-red-50 py-2">
                   <AlertDescription className="text-red-700 text-base">{errors.desiredJob}</AlertDescription>
@@ -144,6 +148,7 @@ export default function RegisterPage() {
 
             <div className="flex flex-col gap-2">
               <Label htmlFor="career" className="text-lg font-semibold">경력 (년)</Label>
+              <p className="text-base text-gray-500">일하신 경험이 얼마나 되세요? (없으시면 0)</p>
               <Input id="career" type="number" min="0" value={careerYears}
                 onChange={e => setCareerYears(e.target.value)}
                 placeholder="0" className="text-lg py-6 border-2" />
