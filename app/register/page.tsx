@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Mic } from 'lucide-react'
 
 const REGIONS = ['서울', '경기', '인천', '기타']
 const JOB_TYPES = ['경비', '청소', '조리', '돌봄', '기타']
@@ -42,6 +43,15 @@ export default function RegisterPage() {
   const [careerYears, setCareerYears] = useState('')
   const [errors, setErrors] = useState<Errors>({})
   const [submitting, setSubmitting] = useState(false)
+
+  const speak = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel(); // Stop any ongoing speech
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ko-KR';
+      window.speechSynthesis.speak(utterance);
+    }
+  }
 
   function validate(): Errors {
     const e: Errors = {}
@@ -93,8 +103,11 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="name" className="text-lg font-semibold">
+              <Label htmlFor="name" className="text-lg font-semibold flex items-center gap-2">
                 이름 <span className="text-red-600">*</span>
+                <button type="button" onClick={() => speak('이름을 적어 주세요')} className="text-blue-600 hover:bg-blue-50 p-1 rounded-full transition-colors" aria-label="음성 안내 듣기">
+                  <Mic size={20} />
+                </button>
               </Label>
               <p className="text-base text-gray-500">이름이 어떻게 되세요?</p>
               {errors.name && (
@@ -107,8 +120,11 @@ export default function RegisterPage() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label className="text-lg font-semibold">
+              <Label className="text-lg font-semibold flex items-center gap-2">
                 지역 <span className="text-red-600">*</span>
+                <button type="button" onClick={() => speak('어디서 일하고 싶으신지 선택해 주세요')} className="text-blue-600 hover:bg-blue-50 p-1 rounded-full transition-colors" aria-label="음성 안내 듣기">
+                  <Mic size={20} />
+                </button>
               </Label>
               <p className="text-base text-gray-500">어디에서 일하고 싶으세요?</p>
               {errors.region && (
@@ -127,8 +143,11 @@ export default function RegisterPage() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label className="text-lg font-semibold">
+              <Label className="text-lg font-semibold flex items-center gap-2">
                 희망 직종 <span className="text-red-600">*</span>
+                <button type="button" onClick={() => speak('어떤일을 하시고 싶은지 선택해 주세요')} className="text-blue-600 hover:bg-blue-50 p-1 rounded-full transition-colors" aria-label="음성 안내 듣기">
+                  <Mic size={20} />
+                </button>
               </Label>
               <p className="text-base text-gray-500">어떤 일을 하시고 싶으세요?</p>
               {errors.desiredJob && (
@@ -147,7 +166,12 @@ export default function RegisterPage() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="career" className="text-lg font-semibold">경력 (년)</Label>
+              <Label htmlFor="career" className="text-lg font-semibold flex items-center gap-2">
+                경력 (년)
+                <button type="button" onClick={() => speak('일하신 경험이 얼마나 되신지 년수로 적어주세요')} className="text-blue-600 hover:bg-blue-50 p-1 rounded-full transition-colors" aria-label="음성 안내 듣기">
+                  <Mic size={20} />
+                </button>
+              </Label>
               <p className="text-base text-gray-500">일하신 경험이 얼마나 되세요? (없으시면 0)</p>
               <Input id="career" type="number" min="0" value={careerYears}
                 onChange={e => setCareerYears(e.target.value)}
